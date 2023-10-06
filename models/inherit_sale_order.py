@@ -21,9 +21,7 @@ class SaleOrder(models.Model):
     rejection_date = fields.Datetime(string="Reject Date", readonly=True)
     reject_by = fields.Many2one('res.users', string="Reject By", readonly=True)
     reject_reason = fields.Char(string="Reject Reason", readonly=True)
-    is_freight_approval_required = fields.Boolean(string="is_freight_approval_required", default=False)
-    is_order_amount_approval_required = fields.Boolean(string="is_order_amount_approval_required", default=False)
-    is_order_line_amount_approval_required = fields.Boolean(string="is_order_line_amount_approval_required",default=False)
+    is_sale_order_approval_required = fields.Boolean(string='IS SALE ORDER APPROVAL REQUIRED', default=True)
 
     def compute_is_boolean(self):
 
@@ -128,11 +126,11 @@ class SaleOrder(models.Model):
     def compute_approval_level(self):
 
         if (self.freight_amount < 0.90 * self.computed_freight_amount):
-            self.is_freight_approval_required = True
+            is_freight_approval_required = True
 
         tax_totals_json = json.loads(self.tax_totals_json)
         if tax_totals_json.get('amount_untaxed') < self.partner_id.min_order_approval_amount:
-            self.is_order_amount_approval_required = True
+            is_order_amount_approval_required = True
 
 
         pricelist_id = self.pricelist_id.id
@@ -147,14 +145,15 @@ class SaleOrder(models.Model):
             current_price = order_line.price_unit
             if current_price < unit_price:
                 if (self.price_type == 'daily' and current_price < unit_price / 30) or (self.price_type == 'monthly'):
-                    self.is_order_line_amount_approval_required = True
+                    is_order_line_amount_approval_required = True
 
-        if self.is_freight_approval_required or self.is_order_amount_approval_required or self.is_order_line_amount_approval_required:
-            team_name = "TODO Atul"
-            if self.team_id.name == 'INSIDE SALES':
-                team_name='INSIDE SALES'
+        if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
+            self.is_sale_order_approval_required = True
+            team_name = ""
+            if self.team_id.name == 'PAM':
+                team_name = 'PAM'
             else:
-                team_name='PAM'
+                team_name = 'INSIDE SALES'
 
             sale_approvals = self.env['sh.sale.approval.config'].search(
                 [('name', 'ilike', team_name)])  # search by team cc or pam, limit 1, order by id desc
@@ -311,10 +310,9 @@ class SaleOrder(models.Model):
                 'user_ids': False
             })
             sale_order = self.env['sale.order'].browse(self.id)
-            self.is_order_amount_approval_required=False
-            self.is_order_line_amount_approval_required=False
-            self.is_freight_approval_required=False
-            sale_order.action_confirm()
+            if self.is_sale_order_approval_required:
+                self.is_sale_order_approval_required = False
+                sale_order.action_confirm()
             super(SaleOrder, self).action_confirm()
 
     def action_reset_to_draft(self):

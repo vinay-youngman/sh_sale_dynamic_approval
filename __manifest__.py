@@ -10,7 +10,7 @@
     "description": """This module allows you to set dynamic and multi-level approvals in quotation/sale order so each order can be approved by many levels. Sale orders can be approved based on untaxed/ total amount and approved by particular users or groups they get emails notification about orders that waiting for approval. When a sale order approves or rejects salesperson gets a notification about it.
 """,
     "version": "15.0.5",
-    "depends": ["sale_management", "bus","sh_base_dynamic_approval"],
+    "depends": ['sale',"sale_management", "bus","sh_base_dynamic_approval"],
     "data": [
         'security/ir.model.access.csv',
         'data/mail_data.xml',
