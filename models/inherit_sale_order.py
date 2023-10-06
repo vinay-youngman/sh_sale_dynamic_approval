@@ -127,6 +127,7 @@ class SaleOrder(models.Model):
         is_freight_approval_required = ''
         is_order_amount_approval_required = ''
         is_order_line_amount_approval_required = ''
+        self.is_sale_order_approval_required = False
 
         if self.order_line:
 
@@ -152,19 +153,19 @@ class SaleOrder(models.Model):
                     if (self.price_type == 'daily' and current_price < unit_price / 30) or (self.price_type == 'monthly'):
                         is_order_line_amount_approval_required = True
 
-            if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
-                self.is_sale_order_approval_required = True
-                team_name = ""
-                if self.team_id.name == 'PAM':
-                    team_name = 'PAM'
-                else:
-                    team_name = 'INSIDE SALES'
+        if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
+            self.is_sale_order_approval_required = True
+            team_name = ""
+            if self.team_id.name == 'PAM':
+                team_name = 'PAM'
+            else:
+                team_name = 'INSIDE SALES'
 
-                sale_approvals = self.env['sh.sale.approval.config'].search(
-                    [('name', 'ilike', team_name)])  # search by team cc or pam, limit 1, order by id desc
-                self.update({
-                    'approval_level_id': sale_approvals[0].id
-                })
+            sale_approvals = self.env['sh.sale.approval.config'].search(
+                [('name', 'ilike', team_name)])  # search by team cc or pam, limit 1, order by id desc
+            self.update({
+                'approval_level_id': sale_approvals[0].id
+            })
 
         else:
             self.approval_level_id = False
