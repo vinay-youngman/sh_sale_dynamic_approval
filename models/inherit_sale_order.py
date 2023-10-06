@@ -122,44 +122,49 @@ class SaleOrder(models.Model):
         else:
             super(SaleOrder, self).action_confirm()
 
-    @api.depends('amount_untaxed')
+    @api.depends('amount_untaxed','freight_amount')
     def compute_approval_level(self):
+        is_freight_approval_required = ''
+        is_order_amount_approval_required = ''
+        is_order_line_amount_approval_required = ''
 
-        if (self.freight_amount < 0.90 * self.computed_freight_amount):
-            is_freight_approval_required = True
+        if self.order_line:
 
-        tax_totals_json = json.loads(self.tax_totals_json)
-        if tax_totals_json.get('amount_untaxed') < self.partner_id.min_order_approval_amount:
-            is_order_amount_approval_required = True
+            if (self.freight_amount < 0.90 * self.computed_freight_amount):
+                is_freight_approval_required = True
+
+            tax_totals_json = json.loads(self.tax_totals_json)
+            if tax_totals_json.get('amount_untaxed') < self.partner_id.min_order_approval_amount:
+                is_order_amount_approval_required = True
 
 
-        pricelist_id = self.pricelist_id.id
-        for order_line in self.order_line:
-            product_id = order_line.product_id.id
-            product_data = self.env['product.pricelist.item'].sudo().search(
-                [('pricelist_id', '=', pricelist_id), ('product_id', '=', product_id)], limit=1)
+            pricelist_id = self.pricelist_id.id
+            for order_line in self.order_line:
+                product_id = order_line.product_id.id
+                product_data = self.env['product.pricelist.item'].sudo().search(
+                    [('pricelist_id', '=', pricelist_id), ('product_id', '=', product_id)], limit=1)
 
-            unit_price = product_data.fixed_price if product_data else self.env['product.product'].search(
-                [('id', '=', product_id)], limit=1).list_price
+                unit_price = product_data.fixed_price if product_data else self.env['product.product'].search(
+                    [('id', '=', product_id)], limit=1).list_price
 
-            current_price = order_line.price_unit
-            if current_price < unit_price:
-                if (self.price_type == 'daily' and current_price < unit_price / 30) or (self.price_type == 'monthly'):
-                    is_order_line_amount_approval_required = True
+                current_price = order_line.price_unit
+                if current_price < unit_price:
+                    if (self.price_type == 'daily' and current_price < unit_price / 30) or (self.price_type == 'monthly'):
+                        is_order_line_amount_approval_required = True
 
-        if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
-            self.is_sale_order_approval_required = True
-            team_name = ""
-            if self.team_id.name == 'PAM':
-                team_name = 'PAM'
-            else:
-                team_name = 'INSIDE SALES'
+            if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
+                self.is_sale_order_approval_required = True
+                team_name = ""
+                if self.team_id.name == 'PAM':
+                    team_name = 'PAM'
+                else:
+                    team_name = 'INSIDE SALES'
 
-            sale_approvals = self.env['sh.sale.approval.config'].search(
-                [('name', 'ilike', team_name)])  # search by team cc or pam, limit 1, order by id desc
-            self.update({
-                'approval_level_id': sale_approvals[0].id
-            })
+                sale_approvals = self.env['sh.sale.approval.config'].search(
+                    [('name', 'ilike', team_name)])  # search by team cc or pam, limit 1, order by id desc
+                self.update({
+                    'approval_level_id': sale_approvals[0].id
+                })
 
         else:
             self.approval_level_id = False
