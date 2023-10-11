@@ -15,6 +15,10 @@ class SaleApprovalConfig(models.Model):
     sale_approval_line = fields.One2many(
         'sh.sale.approval.line', 'sale_approval_config_id')
 
+    is_freight = fields.Boolean(string = "Freight Required" , default=False)
+    is_min_price = fields.Boolean(string = "Min Price Required" , default=False)
+    sales_team = fields.Many2one('crm.team', 'Sales Team')
+
     @api.constrains('sale_approval_line')
     def approval_line_level(self):
         if self.sale_approval_line:
