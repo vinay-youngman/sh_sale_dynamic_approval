@@ -122,11 +122,11 @@ class SaleOrder(models.Model):
         else:
             super(SaleOrder, self).action_confirm()
 
-    @api.depends('amount_untaxed' , 'freight_amount')
+    @api.depends('amount_untaxed' ,'freight_amount')
     def compute_approval_level(self):
-        is_freight_approval_required = ''
-        is_order_amount_approval_required = ''
-        is_order_line_amount_approval_required = ''
+        is_freight_approval_required = False
+        is_order_amount_approval_required = False
+        is_order_line_amount_approval_required = False
         self.is_sale_order_approval_required = False
 
         if self.order_line:
@@ -135,7 +135,7 @@ class SaleOrder(models.Model):
                 is_freight_approval_required = True
 
             tax_totals_json = json.loads(self.tax_totals_json)
-            if tax_totals_json.get('amount_untaxed') < self.partner_id.min_order_approval_amount:
+            if tax_totals_json.get('amount_untaxed')-self.freight_amount < self.partner_id.min_order_approval_amount:
                 is_order_amount_approval_required = True
 
 
@@ -155,20 +155,33 @@ class SaleOrder(models.Model):
 
         sale_approvals = None
 
-        if is_freight_approval_required and not is_order_amount_approval_required and not is_order_line_amount_approval_required:
+        if is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
             sale_approvals = self.env['sh.sale.approval.config'].search([
                 ('is_freight', '=', is_freight_approval_required),
                 ('is_min_price', '=', is_order_line_amount_approval_required),
-                ('sales_team', '=', 'OPERATIONS')
-            ])
-            self.is_sale_order_approval_required = True
-        elif is_freight_approval_required or is_order_amount_approval_required or is_order_line_amount_approval_required:
-            sale_approvals = self.env['sh.sale.approval.config'].search([
-                ('is_freight', '=', is_freight_approval_required),
-                ('is_min_price', '=', is_order_line_amount_approval_required),
+                ('is_total_untaxed', '=', is_order_amount_approval_required),
                 ('sales_team', '=', self.team_id.name)
             ])
             self.is_sale_order_approval_required = True
+
+
+        if sale_approvals is None:
+            sale_approvals = self.env['sh.sale.approval.config'].search([
+                ('is_freight', '=', is_freight_approval_required),
+                ('is_min_price', '=', is_order_line_amount_approval_required),
+                ('is_total_untaxed', '=', is_order_amount_approval_required),
+                ('sales_team', '=', self.team_id.name)
+            ])
+        if sale_approvals is not None and sale_approvals.id == False:
+            sale_approvals = self.env['sh.sale.approval.config'].search([
+                ('is_freight', '=', is_freight_approval_required),
+                ('is_min_price', '=', is_order_line_amount_approval_required),
+                ('is_total_untaxed', '=', is_order_amount_approval_required),
+                ('sales_team', '=', 'APPROVAL TEAM')
+            ])
+            self.is_sale_order_approval_required = True
+
+
 
         if sale_approvals:
             self.update({

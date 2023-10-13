@@ -17,6 +17,7 @@ class SaleApprovalConfig(models.Model):
 
     is_freight = fields.Boolean(string = "Freight Required" , default=False)
     is_min_price = fields.Boolean(string = "Min Price Required" , default=False)
+    is_total_untaxed = fields.Boolean(string = 'Min Order Approval' , default = False)
     sales_team = fields.Many2one('crm.team', 'Sales Team')
 
     @api.constrains('sale_approval_line')
