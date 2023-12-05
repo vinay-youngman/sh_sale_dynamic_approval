@@ -165,21 +165,21 @@ class SaleOrder(models.Model):
             self.is_sale_order_approval_required = True
 
 
-        if sale_approvals is None:
-            sale_approvals = self.env['sh.sale.approval.config'].search([
-                ('is_freight', '=', is_freight_approval_required),
-                ('is_min_price', '=', is_order_line_amount_approval_required),
-                ('is_total_untaxed', '=', is_order_amount_approval_required),
-                ('sales_team', '=', self.team_id.name)
-            ])
-        if sale_approvals is not None and sale_approvals.id == False:
-            sale_approvals = self.env['sh.sale.approval.config'].search([
-                ('is_freight', '=', is_freight_approval_required),
-                ('is_min_price', '=', is_order_line_amount_approval_required),
-                ('is_total_untaxed', '=', is_order_amount_approval_required),
-                ('sales_team', '=', 'APPROVAL TEAM')
-            ])
-            self.is_sale_order_approval_required = True
+        # if sale_approvals is None:
+        #     sale_approvals = self.env['sh.sale.approval.config'].search([
+        #         ('is_freight', '=', is_freight_approval_required),
+        #         ('is_min_price', '=', is_order_line_amount_approval_required),
+        #         ('is_total_untaxed', '=', is_order_amount_approval_required),
+        #         ('sales_team', '=', self.team_id.name)
+        #     ])
+        # if sale_approvals is not None and sale_approvals.id == False:
+        #     sale_approvals = self.env['sh.sale.approval.config'].search([
+        #         ('is_freight', '=', is_freight_approval_required),
+        #         ('is_min_price', '=', is_order_line_amount_approval_required),
+        #         ('is_total_untaxed', '=', is_order_amount_approval_required),
+        #         ('sales_team', '=', 'APPROVAL TEAM')
+        #     ])
+        #     self.is_sale_order_approval_required = True
 
 
 
