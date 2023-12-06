@@ -134,11 +134,6 @@ class SaleOrder(models.Model):
             if (self.freight_amount < 0.90 * self.computed_freight_amount):
                 is_freight_approval_required = True
 
-            tax_totals_json = json.loads(self.tax_totals_json)
-            if tax_totals_json.get('amount_untaxed')-self.freight_amount < self.partner_id.min_order_approval_amount:
-                is_order_amount_approval_required = True
-
-
             pricelist_id = self.pricelist_id.id
             for order_line in self.order_line:
                 product_id = order_line.product_id.id
@@ -152,6 +147,10 @@ class SaleOrder(models.Model):
                 if current_price < unit_price:
                     if (self.price_type == 'daily' and current_price < unit_price / 30) or (self.price_type == 'monthly'):
                         is_order_line_amount_approval_required = True
+            
+            tax_totals_json = json.loads(self.tax_totals_json)
+            if tax_totals_json.get('amount_untaxed')-self.freight_amount < self.partner_id.min_order_approval_amount:
+                is_order_amount_approval_required = True
 
         sale_approvals = None
 
