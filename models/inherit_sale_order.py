@@ -3,6 +3,7 @@ from odoo.exceptions import UserError, ValidationError
 from datetime import datetime
 import json
 
+from odoo.addons.ym_beta_updates.models.sale_order_inherit import get_beta_customer_id_from_gstn,get_beta_customer_id_and_status
 
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
@@ -42,6 +43,7 @@ class SaleOrder(models.Model):
         return [('id', 'in', results)]
 
     def action_confirm(self):
+        self.check_customer_status()
         template_id = self.env.ref(
             "sh_sale_dynamic_approval.email_template_sh_sale_order")
 
@@ -121,6 +123,21 @@ class SaleOrder(models.Model):
 
         else:
             super(SaleOrder, self).action_confirm()
+
+    def check_customer_status(self):
+        if self.customer_branch.gstn:
+            try:
+                connection = self._get_connection()
+                connection.autocommit = False
+                cursor = connection.cursor()
+                cursor.execute(get_beta_customer_id_from_gstn(),
+                               [self.customer_branch.gstn])
+                customer_id, status = get_beta_customer_id_and_status(cursor.fetchall())
+
+                if status != 'UNBLOCK':
+                    raise UserError("This customer is in {} status".format(status))
+            except Exception as e:
+                raise UserError(str(e))
 
     @api.depends('amount_untaxed' ,'freight_amount')
     def compute_approval_level(self):
