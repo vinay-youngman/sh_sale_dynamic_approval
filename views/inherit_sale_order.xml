@@ -8,6 +8,9 @@
         <field name="arch" type="xml">
             <field name="payment_term_id" position="after">
                 <field name="approval_level_id" />
+                <field name="approval_remarks" attrs="{'readonly': [('state', '!=', 'waiting_for_approval')]}" />
+                <p></p><p><b>NOTE:</b> <span style="white-space: nowrap; font-size: 80%;">PLEASE FILL FOR WHAT REASON U ARE APPROVING</span></p>
+
                 <field name="is_boolean" invisible="1" />
 
             </field>

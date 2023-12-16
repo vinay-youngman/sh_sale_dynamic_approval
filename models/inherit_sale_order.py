@@ -10,6 +10,7 @@ class SaleOrder(models.Model):
 
     approval_level_id = fields.Many2one(
         'sh.sale.approval.config', string="Approval Level", compute="compute_approval_level")
+    approval_remarks = fields.Char(string="Approval Remark")
     state = fields.Selection(
         selection_add=[('waiting_for_approval', 'Waiting for Approval'), ('reject', 'Reject'), ('sale',)])
     level = fields.Integer(string="Next Approval Level", readonly=True)
@@ -260,6 +261,8 @@ class SaleOrder(models.Model):
     #         self.approval_level_id = False
 
     def action_approve_order(self):
+        if self.approval_remarks is False:
+            raise UserError(_("Please Fill Approval Remarks"))
         template_id = self.env.ref(
             "sh_sale_dynamic_approval.email_template_sh_sale_order")
 
